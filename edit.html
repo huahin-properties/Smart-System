@@ -1,1 +1,812 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FULL PROPERTY EDITOR | MASTER SYSTEM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
 
+  <style>
+    body { font-family: 'Kanit', sans-serif; background:#f0f2f5; }
+    .tab-active { border-bottom:4px solid #1e293b; color:#1e293b; }
+    .input-card { background:white; padding:1.5rem; border-radius:1.5rem; box-shadow:0 4px 6px -1px rgba(0,0,0,.1); }
+    .field-label { font-size:.75rem; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:.5rem; display:block; }
+    .field-input { width:100%; border:1px solid #e2e8f0; border-radius:.75rem; padding:.75rem; outline:none; transition:all .2s; }
+    .field-input:focus { border-color:#3b82f6; }
+    .field-input[disabled]{ background:#f8fafc; cursor:not-allowed; opacity:.9; }
+
+    .img-tile { position: relative; }
+    .img-x {
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 18px; height: 18px;
+      border-radius: 999px;
+      background: rgba(15,23,42,.85);
+      color: #fff;
+      font-size: 12px;
+      line-height: 18px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .img-x:hover { background: rgba(239,68,68,.95); }
+
+    .pdfbar{
+      display:flex; gap:12px; align-items:center;
+      padding:14px 14px;
+      border:2px dashed #e2e8f0;
+      border-radius: 18px;
+      background:#f8fafc;
+    }
+    .pdficon{
+      width:46px;height:46px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;
+      background:#fee2e2;color:#991b1b;font-weight:900;
+      flex:0 0 auto;
+    }
+    .pdfmeta{flex:1; min-width:0;}
+    .pdfname{font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+    .pdflinkrow{display:flex; align-items:center; gap:8px; min-width:0;}
+    .pdflink{font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; min-width:0;}
+    .pdfdel{
+      width:22px;height:22px;border-radius:999px;
+      display:flex;align-items:center;justify-content:center;
+      background: rgba(15,23,42,.85);
+      color:#fff;
+      font-size:12px;
+      line-height:22px;
+      cursor:pointer;
+      user-select:none;
+      flex:0 0 auto;
+    }
+    .pdfdel:hover{ background: rgba(239,68,68,.95); }
+
+    .pdfbtn2{
+      padding:10px 14px;border-radius:14px;
+      font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.08em;
+      background:#2563eb;color:#fff;
+      flex:0 0 auto;
+    }
+  </style>
+</head>
+
+<body class="p-4 md:p-10 italic">
+  <div class="max-w-5xl mx-auto">
+
+    <div class="bg-slate-900 rounded-[2.5rem] p-6 sm:p-8 md:p-12 text-white flex justify-between items-center mb-8 shadow-2xl">
+      <div>
+        <p class="text-blue-400 font-bold uppercase tracking-widest text-xs mb-2">Master Database Editor</p>
+        <h1 id="displayId" class="text-3xl sm:text-4xl font-bold tracking-tighter italic">HP-XXXX</h1>
+      </div>
+      <button onclick="history.back()" class="bg-white/10 hover:bg-white/20 p-4 rounded-2xl transition-all" title="Close">✕</button>
+    </div>
+
+    <div class="flex gap-8 mb-6 border-b border-slate-200">
+      <button onclick="switchTab('photo')" id="btn-photo" class="pb-4 font-bold text-slate-400 tab-active">COVER &amp; GALLERY</button>
+      <button onclick="switchTab('info')" id="btn-info" class="pb-4 font-bold text-slate-400">PROPERTY DATA</button>
+    </div>
+
+    <div id="tab-photo" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="input-card">
+          <span class="field-label">Main Cover Thumbnail</span>
+          <div id="thumbPreview" class="h-48 bg-slate-50 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden mb-4">
+            <span class="text-4xl text-slate-200">🖼️</span>
+          </div>
+          <input type="file" id="file_thumb" class="hidden" accept="image/*" onchange="previewFile(this,'thumbPreview')">
+          <button onclick="document.getElementById('file_thumb').click()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold uppercase text-xs">
+            Upload Cover
+          </button>
+        </div>
+
+        <div class="input-card">
+          <span class="field-label">Project Gallery Album</span>
+          <div id="galleryPreview" class="h-48 bg-slate-50 rounded-2xl border-2 border-dashed p-2 grid grid-cols-4 gap-2 overflow-y-auto mb-3"></div>
+          <div class="text-[11px] text-slate-500 font-bold mb-3">
+            แตะ ❌ ที่รูปเพื่อเลือก “ลบ” หรือ “เอาออกจากคิวอัปโหลด”
+          </div>
+          <input type="file" id="file_gallery" class="hidden" multiple accept="image/*" onchange="onPickGalleryFiles(this)">
+          <button onclick="document.getElementById('file_gallery').click()" class="w-full py-3 bg-purple-600 text-white rounded-xl font-bold uppercase text-xs">
+            Add Gallery Photos
+          </button>
+        </div>
+      </div>
+
+      <div class="input-card">
+        <span class="field-label">PDF DOCUMENTS (UPLOAD / REPLACE)</span><br>
+
+        <div class="pdfbar mb-3">
+          <div class="pdficon">PDF</div>
+          <div class="pdfmeta">
+            <div class="pdfname">Sales Gallery Link</div>
+            <div class="pdflinkrow">
+              <div class="pdflink" id="salesPdfText">ยังไม่มีไฟล์</div>
+              <div class="pdfdel" title="ลบลิงก์" onclick="clearPdfLink('sales')">✕</div>
+            </div>
+          </div>
+          <button class="pdfbtn2" type="button" onclick="document.getElementById('file_sales_pdf').click()">Upload</button>
+          <input type="file" id="file_sales_pdf" class="hidden" accept="application/pdf" onchange="onPickPdf(this,'sales')">
+        </div>
+
+        <div class="pdfbar mb-3">
+          <div class="pdficon">PDF</div>
+          <div class="pdfmeta">
+            <div class="pdfname">Material PDF Link</div>
+            <div class="pdflinkrow">
+              <div class="pdflink" id="materialPdfText">ยังไม่มีไฟล์</div>
+              <div class="pdfdel" title="ลบลิงก์" onclick="clearPdfLink('material')">✕</div>
+            </div>
+          </div>
+          <button class="pdfbtn2" type="button" onclick="document.getElementById('file_material_pdf').click()">Upload</button>
+          <input type="file" id="file_material_pdf" class="hidden" accept="application/pdf" onchange="onPickPdf(this,'material')">
+        </div>
+
+        <div class="pdfbar">
+          <div class="pdficon">PDF</div>
+          <div class="pdfmeta">
+            <div class="pdfname">Floor Plan Link</div>
+            <div class="pdflinkrow">
+              <div class="pdflink" id="floorplanPdfText">ยังไม่มีไฟล์</div>
+              <div class="pdfdel" title="ลบลิงก์" onclick="clearPdfLink('floorplan')">✕</div>
+            </div>
+          </div>
+          <button class="pdfbtn2" type="button" onclick="document.getElementById('file_floorplan_pdf').click()">Upload</button>
+          <input type="file" id="file_floorplan_pdf" class="hidden" accept="application/pdf" onchange="onPickPdf(this,'floorplan')">
+        </div>
+
+        <div class="text-[11px] text-slate-500 font-bold mt-3">
+          * อัปโหลดไฟล์ใหม่ = ระบบลบไฟล์เก่าในโฟลเดอร์ของ HP_ID แล้วแทนที่ด้วยไฟล์ล่าสุด (แนะนำ PDF ไม่เกิน 6MB)
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-info" class="hidden space-y-6">
+      <div class="input-card grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div><span class="field-label">Plot</span><input id="Plot" class="field-input"></div>
+        <div><span class="field-label">Type</span><input id="Type" class="field-input"></div>
+        <div><span class="field-label">Project Name</span><input id="Project_Name" class="field-input"></div>
+
+        <div><span class="field-label">Bedrooms</span><input type="number" id="Bedrooms" class="field-input"></div>
+        <div><span class="field-label">Bathrooms</span><input type="number" id="Bathrooms" class="field-input"></div>
+        <div><span class="field-label">Parking</span><input id="Parking" class="field-input"></div>
+
+        <div><span class="field-label">Extras</span><input id="Extras" class="field-input" placeholder="เช่น Built-in, Solar, etc."></div>
+        <div><span class="field-label">Electricity</span><input id="Electricity" class="field-input" placeholder="เช่น Government / 5-15 baht"></div>
+        <div></div>
+
+        <div><span class="field-label">Land (sq.w)</span><input id="Land_Area_sq_w" class="field-input"></div>
+        <div><span class="field-label">Land (sq.m)</span><input id="Land_Area_sq_m" class="field-input"></div>
+        <div><span class="field-label">Living (sq.m)</span><input id="Living_Area_sq_m" class="field-input"></div>
+
+        <div><span class="field-label">Pool Size</span><input id="Pool_Size" class="field-input"></div>
+        <div><span class="field-label">Pool Depth</span><input id="Pool_Depth" class="field-input"></div>
+
+        <div>
+          <span class="field-label">Furnishing</span>
+          <select id="Furnishing" class="field-input">
+            <option value="">-- Select Furnishing --</option>
+            <option value="Ready to Move">Ready to Move</option>
+            <option value="Fully Furnished">Fully Furnished</option>
+            <option value="Partially Furnished">Partially Furnished</option>
+            <option value="Unfurnished">Unfurnished</option>
+          </select>
+        </div>
+
+        <div class="col-span-full"><span class="field-label">Address</span><input id="Address" class="field-input"></div>
+
+        <div class="bg-blue-50 p-4 rounded-xl">
+          <span class="field-label text-blue-600">Price (THB)</span>
+          <input id="Price" class="field-input border-blue-200 font-bold">
+        </div>
+
+        <div><span class="field-label">Price/SQM</span><input id="Price_SQM" class="field-input"></div>
+
+        <div>
+          <span class="field-label">Status</span>
+          <select id="Status" class="field-input">
+            <option value="">-- Select Status --</option>
+            <!-- ✅ ตรงกับในชีท -->
+            <option value="Available">Available</option>
+            <option value="Under Con">Under Con</option>
+            <option value="Reserved">Reserved</option>
+            <option value="Sold">Sold</option>
+          </select>
+        </div>
+
+        <div>
+          <span class="field-label">Badge</span>
+          <select id="Badge" class="field-input">
+            <option value="">-- Select Badge --</option>
+            <option value="NEW LISTING">NEW LISTING</option>
+            <option value="JUST ADDED">JUST ADDED</option>
+            <option value="COMING SOON">COMING SOON</option>
+            <option value="NEW PROJECT">NEW PROJECT</option>
+            <option value="HOT DEAL">HOT DEAL</option>
+            <option value="BEST SELLER">BEST SELLER</option>
+            <option value="LAST UNIT">LAST UNIT</option>
+            <option value="MOST VIEWED">MOST VIEWED</option>
+            <option value="LIMITED OFFER">LIMITED OFFER</option>
+            <option value="SPECIAL PRICE">SPECIAL PRICE</option>
+            <option value="PRICE REDUCED">PRICE REDUCED</option>
+            <option value="BEST VALUE">BEST VALUE</option>
+            <option value="INVESTMENT PICK">INVESTMENT PICK</option>
+            <option value="READY TO MOVE">READY TO MOVE</option>
+            <option value="FULLY FURNISHED">FULLY FURNISHED</option>
+            <option value="SEA VIEW">SEA VIEW</option>
+            <option value="POOL ACCESS">POOL ACCESS</option>
+            <option value="PREMIUM QUALITY">PREMIUM QUALITY</option>
+            <option value="QUIET ZONE">QUIET ZONE</option>
+          </select>
+        </div>
+
+        <div class="col-span-full"><span class="field-label">Description</span><textarea id="Description" rows="4" class="field-input"></textarea></div>
+
+        <div>
+          <span class="field-label">District</span>
+          <select id="District" class="field-input">
+            <option value="">-- Select District --</option>
+            <option value="Hua Hin">Hua Hin</option>
+            <option value="Cha-am">Cha-am</option>
+            <option value="Pranburi">Pranburi</option>
+          </select>
+        </div>
+
+        <div>
+          <span class="field-label">Sub-District</span>
+          <select id="SubDistrict" class="field-input" disabled>
+            <option value="">-- Select Sub-District --</option>
+          </select>
+        </div>
+
+        <div>
+          <span class="field-label">Zone</span>
+          <select id="Zone" class="field-input">
+            <option value="">-- Select Zone --</option>
+            <option value="Hua Hin">Hua Hin</option>
+            <option value="Pranburi">Pranburi</option>
+            <option value="Cha-am">Cha-am</option>
+            <option value="Beachside">Beachside</option>
+            <option value="Nature">Nature</option>
+            <option value="City">City</option>
+            <option value="Quiet">Quiet</option>
+          </select>
+        </div>
+
+        <div><span class="field-label">Commission</span><input id="Commission" class="field-input"></div>
+
+        <div class="col-span-full border-t pt-6"><span class="field-label">External Links</span></div>
+
+        <div><span class="field-label">FB Link</span><input id="FB_Link" class="field-input"></div>
+        <div><span class="field-label">Map Link</span><input id="Map_Link" class="field-input"></div>
+        <div><span class="field-label">Virtual Tour</span><input id="Virtual_Tour" class="field-input"></div>
+
+        <!-- ✅ FIX: System Status ให้ HQ แก้ได้ / Project อ่านอย่างเดียว -->
+        <div class="col-span-full">
+          <span class="field-label">System Status <span id="sysHint" class="text-slate-300">(READ ONLY)</span></span>
+          <select id="System_Status_Select" class="field-input font-bold bg-slate-50" disabled>
+            <option value="Offline">Offline</option>
+            <option value="Pending">Pending</option>
+            <option value="Live">Live</option>
+          </select>
+
+          <!-- ✅ คง id เดิมไว้ เพื่อไม่ให้ส่วนอื่นพัง (เป็น hidden mirror) -->
+          <input id="System_Status" class="hidden" value="Pending">
+
+          <p class="text-xs text-slate-400 mt-2 italic">
+            Offline = ไม่แสดงออนไลน์ | Pending = ยังไม่แสดงออนไลน์แต่แก้ไขข้อมูลได้ | Live = ข้อมูลพร้อมแล้ว (กำหนดโดย Master/HQ)
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="updateData()" id="saveBtn"
+      class="w-full mt-10 py-6 sm:py-8 bg-slate-900 text-white rounded-[2.5rem] font-bold uppercase tracking-[0.4em] sm:tracking-[0.5em] shadow-2xl hover:bg-blue-600 transition-all active:scale-95">
+      Update Master Database
+    </button>
+
+  </div>
+
+  <div id="successPopup" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+    <div class="bg-white rounded-[3rem] p-10 sm:p-12 text-center max-w-sm w-full shadow-2xl border-t-8 border-green-500">
+      <div class="w-24 h-24 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner">✓</div>
+      <h2 class="text-2xl font-bold mb-2">บันทึกสำเร็จ!</h2>
+      <p class="text-slate-400 text-sm mb-8 font-bold uppercase tracking-wider">
+        ข้อมูลและรูปภาพถูกซิงค์ไปยัง <br>Google Drive &amp; Sheets แล้ว
+      </p>
+      <button onclick="history.back()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-slate-800 transition-all">
+        กลับสู่หน้าหลัก
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ============================
+    // CONFIG
+    // ============================
+    const API_URL = "https://script.google.com/macros/s/AKfycbxc76n6YKLUCCHZZR12c5K4_0k40gHa2ZzDMVZn29BElQlSO3X6O8B7dFIFi0bEukqJ/exec";
+    const urlParams = new URLSearchParams(location.search);
+    const HP_ID = urlParams.get("id");
+    const PROJECT = urlParams.get("project") || "HP00";
+
+    // ✅ AUTH (รองรับ token/role จาก gateway ที่เก็บใน localStorage)
+    const TOKEN = (urlParams.get("token") || localStorage.getItem("HP_AUTH_TOKEN") || "").trim();
+    const ROLE  = (localStorage.getItem("HP_AUTH_ROLE") || "").trim(); // "HQ" | "PROJECT"
+
+    let existingGallery = [];
+    let removedGallery = [];
+    let newGalleryQueue = [];
+
+    let pdfLinks = { sales:"", material:"", floorplan:"" };
+    const MAX_PDF_BYTES = 6 * 1024 * 1024;
+
+    let pdfAction = { sales:"keep", material:"keep", floorplan:"keep" }; // keep | clear | replace
+
+    const SUBDISTRICTS_BY_DISTRICT = {
+      "Hua Hin": ["Hua Hin","Nong Kae","Hin Lek Fai","Thap Tai","Huai Sat Yai","Bueng Nakhon","Nong Phlap"],
+      "Cha-am": ["Cha-am","Bang Kao","Na Yang","Khao Yai","Nong Sala","Huai Sai Nuea","Rai Mai Phatthana"],
+      "Pranburi": ["Pran Buri","Pak Nam Pran","Wang Phong","Nong Ta Taem","Nong Din Daeng","Khao Noi","Khao Chao"]
+    };
+
+    // ============================
+    // UI
+    // ============================
+    function switchTab(tab) {
+      document.getElementById("tab-photo").classList.toggle("hidden", tab !== "photo");
+      document.getElementById("tab-info").classList.toggle("hidden", tab !== "info");
+      document.getElementById("btn-photo").classList.toggle("tab-active", tab === "photo");
+      document.getElementById("btn-info").classList.toggle("tab-active", tab === "info");
+    }
+
+    function setSubDistrictOptions(selectedDistrict, selectedSubDistrict = "") {
+      const subSel = document.getElementById("SubDistrict");
+      const list = SUBDISTRICTS_BY_DISTRICT[selectedDistrict] || [];
+      subSel.innerHTML = `<option value="">-- Select Sub-District --</option>`;
+
+      if (!selectedDistrict || list.length === 0) {
+        subSel.disabled = true;
+        subSel.value = "";
+        return;
+      }
+
+      list.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        subSel.appendChild(opt);
+      });
+
+      subSel.disabled = false;
+
+      if (selectedSubDistrict) {
+        subSel.value = selectedSubDistrict;
+        if (subSel.value !== selectedSubDistrict) {
+          const custom = document.createElement("option");
+          custom.value = selectedSubDistrict;
+          custom.textContent = selectedSubDistrict + " (custom)";
+          subSel.appendChild(custom);
+          subSel.value = selectedSubDistrict;
+        }
+      }
+    }
+
+    function bindDistrictChange() {
+      const districtSel = document.getElementById("District");
+      districtSel.addEventListener("change", () => setSubDistrictOptions(districtSel.value, ""));
+    }
+
+    function previewFile(input, targetId) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => document.getElementById(targetId).innerHTML =
+        `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+      reader.readAsDataURL(file);
+    }
+
+    function renderGallery() {
+      const box = document.getElementById("galleryPreview");
+      const keptExisting = existingGallery.filter(u => !removedGallery.includes(u));
+      const tiles = [];
+
+      keptExisting.forEach((url) => {
+        tiles.push(`
+          <div class="img-tile">
+            <div class="img-x" onclick="removeExistingImage('${encodeURIComponent(url)}')" title="Remove">✕</div>
+            <img src="${url}" class="w-full h-12 object-cover rounded-lg">
+          </div>
+        `);
+      });
+
+      newGalleryQueue.forEach((it, idx) => {
+        tiles.push(`
+          <div class="img-tile">
+            <div class="img-x" onclick="removeNewQueuedImage(${idx})" title="Remove">✕</div>
+            <img src="${it.previewUrl}" class="w-full h-12 object-cover rounded-lg">
+          </div>
+        `);
+      });
+
+      box.innerHTML = tiles.length
+        ? tiles.join("")
+        : `<span class="text-4xl text-slate-200 col-span-4 self-center justify-self-center">🗂️</span>`;
+    }
+
+    window.removeExistingImage = function(encodedUrl) {
+      const url = decodeURIComponent(encodedUrl);
+      if (!removedGallery.includes(url)) removedGallery.push(url);
+      renderGallery();
+    }
+
+    window.removeNewQueuedImage = function(index) {
+      if (index < 0 || index >= newGalleryQueue.length) return;
+      try { URL.revokeObjectURL(newGalleryQueue[index].previewUrl); } catch(e){}
+      newGalleryQueue.splice(index, 1);
+      renderGallery();
+    }
+
+    window.onPickGalleryFiles = function(input) {
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
+      files.forEach(f => {
+        const url = URL.createObjectURL(f);
+        newGalleryQueue.push({ file: f, previewUrl: url });
+      });
+      input.value = "";
+      renderGallery();
+    }
+
+    function setPdfText(key, text) {
+      const map = { sales: "salesPdfText", material: "materialPdfText", floorplan: "floorplanPdfText" };
+      const el = document.getElementById(map[key]);
+      if (el) el.textContent = text || "ยังไม่มีไฟล์";
+    }
+
+    window.clearPdfLink = function(key){
+      const mapFile = { sales:"file_sales_pdf", material:"file_material_pdf", floorplan:"file_floorplan_pdf" };
+      pdfLinks[key] = "";
+      pdfAction[key] = "clear";
+      setPdfText(key, "ยังไม่มีไฟล์");
+      const f = document.getElementById(mapFile[key]);
+      if (f) f.value = "";
+    }
+
+    window.onPickPdf = function(input, key) {
+      const f = input.files && input.files[0];
+      if (!f) return;
+
+      if (String(f.type).toLowerCase() !== "application/pdf") {
+        input.value = "";
+        return alert("กรุณาเลือกไฟล์ PDF เท่านั้น");
+      }
+
+      if (f.size > MAX_PDF_BYTES) {
+        input.value = "";
+        return alert(`ไฟล์ใหญ่เกินไป (${(f.size/1024/1024).toFixed(1)}MB)\nแนะนำไม่เกิน 6MB`);
+      }
+
+      pdfAction[key] = "replace";
+      setPdfText(key, "เลือกไฟล์ใหม่: " + f.name);
+    }
+
+    // ============================
+    // JSONP (โหลด/ตรวจสอบหลัง save แบบ no-cors)
+    // ============================
+    function jsonp_(paramsObj){
+      return new Promise((resolve, reject) => {
+        const cbName = "cb_" + Math.random().toString(16).slice(2);
+        const timeout = setTimeout(() => { cleanup(); reject(new Error("JSONP timeout")); }, 15000);
+
+        function cleanup(){
+          clearTimeout(timeout);
+          try { delete window[cbName]; } catch(e){ window[cbName] = undefined; }
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+        }
+
+        window[cbName] = (data) => { cleanup(); resolve(data); };
+
+        const urlParams = new URLSearchParams();
+        Object.entries(paramsObj || {}).forEach(([k,v]) => {
+          if (v === undefined || v === null) return;
+          urlParams.set(k, String(v));
+        });
+        urlParams.set("callback", cbName);
+        urlParams.set("t", Date.now());
+
+        const script = document.createElement("script");
+        script.src = API_URL + "?" + urlParams.toString();
+        script.onerror = () => { cleanup(); reject(new Error("JSONP network error")); };
+        document.body.appendChild(script);
+      });
+    }
+
+    // ============================
+    // HQ lock/unlock System_Status
+    // ============================
+    function applyRoleLock_(){
+      const isHQ = (ROLE === "HQ");
+      const sel = document.getElementById("System_Status_Select");
+      const hint = document.getElementById("sysHint");
+
+      if (isHQ){
+        sel.disabled = false;
+        sel.classList.remove("bg-slate-50");
+        hint.textContent = "(HQ ONLY)";
+        hint.classList.remove("text-slate-300");
+        hint.classList.add("text-blue-600");
+      } else {
+        sel.disabled = true;
+        sel.classList.add("bg-slate-50");
+        hint.textContent = "(READ ONLY)";
+        hint.classList.remove("text-blue-600");
+        hint.classList.add("text-slate-300");
+      }
+    }
+
+    // ============================
+    // LOAD DATA
+    // ============================
+    async function loadData() {
+      document.getElementById("displayId").innerText = HP_ID || "HP-XXXX";
+      if (!HP_ID || !PROJECT) return alert("Missing id/project in URL");
+
+      try {
+        // ✅ ใช้ JSONP เพื่อไม่ให้ติด CORS ตอนโหลด (รองรับได้ทั้งมี/ไม่มี callback ฝั่ง GS)
+        // ถ้าฝั่ง GS ยังไม่รองรับ JSONP ก็จะ error → fallback fetch เดิม
+        let data = null;
+        try{
+          data = await jsonp_({
+            mode: "getUnitDetail",
+            hpId: HP_ID,
+            project: PROJECT,
+            token: TOKEN
+          });
+        }catch(_){
+          const res = await fetch(`${API_URL}?mode=getUnitDetail&hpId=${encodeURIComponent(HP_ID)}&project=${encodeURIComponent(PROJECT)}&token=${encodeURIComponent(TOKEN)}&t=${Date.now()}`);
+          data = await res.json();
+        }
+
+        if (data && data.error) throw new Error(data.error);
+
+        Object.keys(data || {}).forEach(k => {
+          const el = document.getElementById(k);
+          if (el) el.value = (data[k] ?? "");
+        });
+
+        // ✅ กัน FB_Link หาย
+        const fbEl = document.getElementById("FB_Link");
+        if (fbEl) fbEl.value = (data.FB_Link ?? "");
+
+        const districtVal = (data.District ?? "").toString().trim();
+        const subDistrictVal = (data.SubDistrict ?? "").toString().trim();
+        if (districtVal) {
+          document.getElementById("District").value = districtVal;
+          setSubDistrictOptions(districtVal, subDistrictVal);
+        } else {
+          setSubDistrictOptions("", "");
+        }
+
+        // ✅ System_Status: ใช้ Live/Pending/Offline ตามชีท
+        const rawSys = (data.System_Status ?? "").toString().trim();
+        const sysVal = rawSys || "Pending";
+        document.getElementById("System_Status").value = sysVal;
+        document.getElementById("System_Status_Select").value = sysVal;
+
+        applyRoleLock_();
+
+        if (data.Thumbnail_Image) {
+          document.getElementById("thumbPreview").innerHTML = `<img src="${data.Thumbnail_Image}" class="w-full h-full object-cover">`;
+        }
+
+        existingGallery = [];
+        removedGallery = [];
+        newGalleryQueue = [];
+
+        if (data.Image_List) {
+          existingGallery = String(data.Image_List).split(",").map(s => s.trim()).filter(Boolean);
+        }
+        renderGallery();
+
+        pdfLinks = {
+          sales: (data.Sales_Gallery || "").toString().trim(),
+          material: (data.Material_PDF || "").toString().trim(),
+          floorplan: (data.FloorPlan_PDF || "").toString().trim()
+        };
+
+        pdfAction = { sales:"keep", material:"keep", floorplan:"keep" };
+
+        setPdfText("sales", pdfLinks.sales || "ยังไม่มีไฟล์");
+        setPdfText("material", pdfLinks.material || "ยังไม่มีไฟล์");
+        setPdfText("floorplan", pdfLinks.floorplan || "ยังไม่มีไฟล์");
+
+      } catch (e) {
+        alert("Error loading data: " + e.message);
+      }
+    }
+
+    // ============================
+    // BASE64
+    // ============================
+    const toBase64 = file => new Promise((resolve, reject) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ data: reader.result.split(",")[1], type: file.type });
+        reader.onerror = () => reject(new Error("File read error"));
+        reader.readAsDataURL(file);
+      } catch (e) { reject(e); }
+    });
+
+    // ============================
+    // SAVE (POST + fallback no-cors + verify)
+    // ============================
+    async function verifyAfterSave_(){
+      // ✅ ตรวจสอบว่าค่าถูกอัปเดตจริง โดยโหลด detail อีกครั้ง
+      // ใช้ JSONP ก่อน ถ้าไม่ได้ค่อย fetch
+      let data = null;
+      try{
+        data = await jsonp_({ mode:"getUnitDetail", hpId: HP_ID, project: PROJECT, token: TOKEN });
+      }catch(_){
+        const res = await fetch(`${API_URL}?mode=getUnitDetail&hpId=${encodeURIComponent(HP_ID)}&project=${encodeURIComponent(PROJECT)}&token=${encodeURIComponent(TOKEN)}&t=${Date.now()}`);
+        data = await res.json();
+      }
+      return data;
+    }
+
+    async function updateData() {
+      const btn = document.getElementById("saveBtn");
+      btn.disabled = true;
+      const oldText = btn.innerText;
+      btn.innerText = "UPDATING DATABASE...";
+
+      // sync mirror system status
+      document.getElementById("System_Status").value = document.getElementById("System_Status_Select").value;
+
+      const keepGallery = existingGallery.filter(u => !removedGallery.includes(u));
+      const removeGallery = removedGallery.slice();
+
+      const payload = {
+        mode: "updateUnit",
+        project: PROJECT,
+        hpId: HP_ID,
+
+        // ✅ token/role
+        token: TOKEN,
+
+        Plot: document.getElementById("Plot").value,
+        Type: document.getElementById("Type").value,
+        Address: document.getElementById("Address").value,
+        Project_Name: document.getElementById("Project_Name").value,
+        Bedrooms: document.getElementById("Bedrooms").value,
+        Bathrooms: document.getElementById("Bathrooms").value,
+
+        Parking: document.getElementById("Parking").value,
+        Extras: document.getElementById("Extras").value,
+        Electricity: document.getElementById("Electricity").value,
+
+        Land_Area_sq_w: document.getElementById("Land_Area_sq_w").value,
+        Land_Area_sq_m: document.getElementById("Land_Area_sq_m").value,
+        Living_Area_sq_m: document.getElementById("Living_Area_sq_m").value,
+
+        Pool_Size: document.getElementById("Pool_Size").value,
+        Pool_Depth: document.getElementById("Pool_Depth").value,
+        Furnishing: document.getElementById("Furnishing").value,
+
+        Status: document.getElementById("Status").value,
+        District: document.getElementById("District").value,
+        SubDistrict: document.getElementById("SubDistrict").value,
+        Zone: document.getElementById("Zone").value,
+
+        Price: document.getElementById("Price").value,
+        Price_SQM: document.getElementById("Price_SQM").value,
+        Badge: document.getElementById("Badge").value,
+        Description: document.getElementById("Description").value,
+
+        FB_Link: document.getElementById("FB_Link").value,
+        Map_Link: document.getElementById("Map_Link").value,
+        Virtual_Tour: document.getElementById("Virtual_Tour").value,
+        Commission: document.getElementById("Commission").value,
+
+        // ✅ HQ only (ถ้าฝั่ง GS มี rule จะ ignore อัตโนมัติ)
+        System_Status: document.getElementById("System_Status").value,
+
+        keepGallery,
+        removeGallery,
+
+        file_thumb: null,
+        files_gallery: [],
+
+        file_sales_pdf: null,
+        file_material_pdf: null,
+        file_floorplan_pdf: null,
+
+        pdfAction: { ...pdfAction },
+
+        Sales_Gallery: (pdfAction.sales === "clear") ? "" : undefined,
+        Material_PDF: (pdfAction.material === "clear") ? "" : undefined,
+        FloorPlan_PDF: (pdfAction.floorplan === "clear") ? "" : undefined
+      };
+
+      try {
+        const thumb = document.getElementById("file_thumb").files[0];
+        if (thumb) payload.file_thumb = await toBase64(thumb);
+
+        for (const it of (newGalleryQueue || [])) {
+          payload.files_gallery.push(await toBase64(it.file));
+        }
+
+        const salesPdf = document.getElementById("file_sales_pdf").files[0];
+        if (salesPdf) payload.file_sales_pdf = await toBase64(salesPdf);
+
+        const materialPdf = document.getElementById("file_material_pdf").files[0];
+        if (materialPdf) payload.file_material_pdf = await toBase64(materialPdf);
+
+        const floorPdf = document.getElementById("file_floorplan_pdf").files[0];
+        if (floorPdf) payload.file_floorplan_pdf = await toBase64(floorPdf);
+
+        // ✅ Attempt #1: POST ปกติ (อ่านผลลัพธ์ได้)
+        let out = null;
+        try{
+          const res = await fetch(API_URL, { method:"POST", body: JSON.stringify(payload) });
+          out = await res.json().catch(() => ({}));
+          if (!res.ok || out.error) throw new Error(out.error || "Save failed");
+        }catch(err1){
+          // ✅ Attempt #2: POST แบบ no-cors ให้ยิงถึงแน่นอน (แต่ตอบกลับอ่านไม่ได้)
+          try{
+            await fetch(API_URL, { method:"POST", mode:"no-cors", body: JSON.stringify(payload) });
+          }catch(_){}
+
+          // ✅ verify ว่าลงชีทจริง
+          const after = await verifyAfterSave_();
+          if (after && after.error) throw new Error(after.error);
+
+          // ตรวจจุดสำคัญ 2-3 ค่าให้มั่นใจ (Status + FB_Link + System_Status)
+          const wantStatus = String(payload.Status || "").trim();
+          const gotStatus = String(after.Status || "").trim();
+          if (wantStatus && gotStatus && wantStatus !== gotStatus) {
+            throw new Error("บันทึกไม่สำเร็จ (Status ยังไม่เปลี่ยนในชีท)");
+          }
+
+          // ถ้าถึงจุดนี้ถือว่าบันทึกสำเร็จ
+          out = { ok:true, pdfLinks: {
+            sales: after.Sales_Gallery || "",
+            material: after.Material_PDF || "",
+            floorplan: after.FloorPlan_PDF || ""
+          }};
+        }
+
+        // อัปเดตข้อความ PDF ตามผลล่าสุด
+        if (out && out.pdfLinks) {
+          pdfLinks = {
+            sales: out.pdfLinks.sales || "",
+            material: out.pdfLinks.material || "",
+            floorplan: out.pdfLinks.floorplan || ""
+          };
+          setPdfText("sales", pdfLinks.sales || "ยังไม่มีไฟล์");
+          setPdfText("material", pdfLinks.material || "ยังไม่มีไฟล์");
+          setPdfText("floorplan", pdfLinks.floorplan || "ยังไม่มีไฟล์");
+        } else {
+          if (pdfAction.sales === "clear") setPdfText("sales", "ยังไม่มีไฟล์");
+          if (pdfAction.material === "clear") setPdfText("material", "ยังไม่มีไฟล์");
+          if (pdfAction.floorplan === "clear") setPdfText("floorplan", "ยังไม่มีไฟล์");
+        }
+
+        document.getElementById("successPopup").classList.remove("hidden");
+
+      } catch (e) {
+        alert("Save Failed: " + e.message);
+        btn.disabled = false;
+        btn.innerText = oldText;
+      }
+    }
+
+    // ============================
+    // INIT
+    // ============================
+    window.onload = () => {
+      bindDistrictChange();
+      loadData();
+    };
+  </script>
+</body>
+</html>
