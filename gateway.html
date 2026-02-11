@@ -1,1 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DIRECT HUB - ADMIN GATEWAY</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;600&display=swap" rel="stylesheet">
+</head>
 
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-6 italic font-medium" style="font-family:Kanit,sans-serif;">
+  <div class="max-w-md w-full bg-white rounded-[4rem] p-10 sm:p-16 text-center shadow-2xl border-t-[14px] border-slate-900 relative overflow-hidden">
+    <div class="w-24 h-24 bg-slate-50 text-slate-900 rounded-[2.5rem] flex items-center justify-content-center mx-auto mb-10 text-3xl shadow-inner border border-slate-100 flex items-center justify-center">
+      🔒
+    </div>
+
+    <h1 class="text-3xl font-bold text-slate-800 mb-4 tracking-tighter uppercase">Direct Admin</h1>
+    <p class="text-slate-400 text-[10px] mb-8 uppercase tracking-[0.3em] font-bold leading-relaxed">
+      ระบบจัดการข้อมูลฝากขายตรง<br>Authorized Personnel Only
+    </p>
+
+    <div class="bg-slate-50 rounded-[2rem] p-5 mb-6 border border-slate-100">
+      <div class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Project</div>
+      <input id="projectInput" class="w-full text-center font-extrabold text-slate-900 bg-white border border-slate-200 rounded-2xl px-4 py-3 outline-none" value="HP00">
+
+      <div class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-4 mb-2">PIN</div>
+      <input id="pinInput" type="password" inputmode="numeric" autocomplete="off"
+             class="w-full text-center font-extrabold text-slate-900 bg-white border border-slate-200 rounded-2xl px-4 py-3 outline-none tracking-[0.3em]"
+             placeholder="••••">
+
+      <div id="err" class="text-[11px] font-bold text-rose-500 mt-3 hidden">Invalid PIN</div>
+    </div>
+
+    <button id="loginBtn"
+      class="group block w-full py-6 bg-slate-900 text-white rounded-[2rem] font-bold uppercase text-[11px] tracking-widest
+             hover:bg-blue-600 transition-all shadow-2xl active:scale-95">
+      Login to Dashboard <span class="inline-block ml-2 group-hover:translate-x-2 transition-transform">➜</span>
+    </button>
+
+    <div class="text-[10px] text-slate-300 font-bold uppercase tracking-[0.25em] mt-8">
+      Session expires automatically
+    </div>
+  </div>
+
+  <script>
+    // ✅ ใช้ Web App URL ใหม่ของคุณ
+    const API_URL = "https://script.google.com/macros/s/AKfycbxc76n6YKLUCCHZZR12c5K4_0k40gHa2ZzDMVZn29BElQlSO3X6O8B7dFIFi0bEukqJ/exec";
+
+    const urlParams = new URLSearchParams(location.search);
+    const defaultProject = urlParams.get("project") || "HP00";
+    document.getElementById("projectInput").value = defaultProject;
+
+    function setErr(msg){
+      const e = document.getElementById("err");
+      if (!msg){
+        e.classList.add("hidden");
+        e.textContent = "";
+        return;
+      }
+      e.textContent = msg;
+      e.classList.remove("hidden");
+    }
+
+    // ✅ JSONP helper (แก้ CORS สำหรับ GitHub Pages)
+    function jsonp(url, timeoutMs = 12000){
+      return new Promise((resolve, reject) => {
+        const cbName = "cb_" + Math.random().toString(16).slice(2);
+        const script = document.createElement("script");
+        let done = false;
+
+        const timer = setTimeout(() => {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("Timeout ติดต่อ Web App ไม่ได้"));
+        }, timeoutMs);
+
+        function cleanup(){
+          clearTimeout(timer);
+          try { delete window[cbName]; } catch(e){}
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+        }
+
+        window[cbName] = (data) => {
+          if (done) return;
+          done = true;
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = () => {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("โหลดสคริปต์ไม่สำเร็จ (script error)"));
+        };
+
+        const join = url.includes("?") ? "&" : "?";
+        script.src = url + join + "callback=" + encodeURIComponent(cbName);
+        document.body.appendChild(script);
+      });
+    }
+
+    async function doLogin(){
+      setErr("");
+      const btn = document.getElementById("loginBtn");
+      btn.disabled = true;
+      const old = btn.innerText;
+      btn.innerText = "LOGGING IN...";
+
+      const project = (document.getElementById("projectInput").value || "").trim();
+      const pin = (document.getElementById("pinInput").value || "").trim();
+
+      try{
+        if (!project || !pin) throw new Error("กรุณากรอก Project และ PIN");
+
+        // ✅ เรียกแบบ GET + JSONP (ไม่ติด CORS)
+        const url =
+          API_URL +
+          `?mode=login&project=${encodeURIComponent(project)}&pin=${encodeURIComponent(pin)}&t=${Date.now()}`;
+
+        const out = await jsonp(url);
+
+        if (!out || !out.ok) throw new Error((out && out.error) ? out.error : "Login failed");
+
+        localStorage.setItem("HP_AUTH_TOKEN", out.token);
+        localStorage.setItem("HP_AUTH_ROLE", out.role);
+        localStorage.setItem("HP_AUTH_PROJECT", out.project);
+        localStorage.setItem("HP_AUTH_EXPIRES", String(out.expiresAt || ""));
+
+        location.href = `dashboard.html?project=${encodeURIComponent(out.project)}`;
+      }catch(err){
+        setErr(err.message || "Invalid PIN");
+        btn.disabled = false;
+        btn.innerText = old;
+      }
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", doLogin);
+    document.getElementById("pinInput").addEventListener("keydown", (ev)=>{
+      if (ev.key === "Enter") doLogin();
+    });
+  </script>
+</body>
+</html>
