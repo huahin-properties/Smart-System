@@ -1,1 +1,703 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>smart properties system</title>
+  <style>
+    :root{
+      --bg:#9eb5cf;
+      --card:#ffffff;
+      --soft:#eef3f8;
+      --text:#0b1320;
+      --muted:#6b7a90;
+      --shadow:0 12px 30px rgba(0,0,0,.12);
+      --radius:22px;
+      --radius2:18px;
+      --line:rgba(255,255,255,.45);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,"Noto Sans Thai",sans-serif;
+      background: radial-gradient(1200px 700px at 10% 10%, rgba(255,255,255,.26), transparent 60%),
+                  radial-gradient(1100px 700px at 90% 30%, rgba(255,255,255,.18), transparent 60%),
+                  linear-gradient(180deg, #8faac8, #a7bdd5 55%, #95b2cf);
+      color:var(--text);
+      min-height:100vh;
+    }
 
+    /* ✅ แก้ไขตามคำสั่ง: ลดขนาด Front ลง ~15% ให้พอดีทั้งมือถือ/คอม */
+    .wrap{max-width:1000px;margin:0 auto;padding:12px 12px 38px}
+
+    .topbar{
+      background: rgba(255,255,255,.18);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      padding: 10px 10px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      backdrop-filter: blur(8px);
+    }
+    .logo{
+      width:38px;height:38px;border-radius:999px;
+      background: rgba(255,255,255,.55);
+      display:grid;place-items:center;
+      font-weight:900;
+      letter-spacing:.5px;
+      font-size:14px;
+    }
+    .titlebox{flex:1;min-width:0}
+    .title{
+      font-size:16px;
+      font-weight:900;
+      line-height:1.1;
+      margin:0;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .subtitle{
+      margin-top:4px;
+      font-size:11px;
+      color:rgba(11,19,32,.7);
+      display:flex;
+      gap:8px;
+      align-items:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .chip{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:5px 9px;
+      border-radius:999px;
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(255,255,255,.45);
+      font-weight:700;
+      color:rgba(11,19,32,.75);
+      font-size:12px;
+    }
+    .iconbtn{
+      width:38px;height:38px;border-radius:999px;
+      border: 1px solid rgba(255,255,255,.55);
+      background: rgba(255,255,255,.55);
+      display:grid;place-items:center;
+      cursor:pointer;
+      user-select:none;
+      text-decoration:none;
+      color:inherit;
+    }
+    .iconbtn:active{transform:scale(.98)}
+    .iconbtn svg{width:18px;height:18px;opacity:.9}
+
+    /* controls */
+    .controls{
+      margin-top:10px;
+      display:flex;
+      justify-content:center;
+    }
+    .controlsInner{
+      width:100%;
+      max-width:731px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:nowrap;
+    }
+    .selectWrap{
+      flex:1 1 0;
+      min-width: 0;
+      max-width: none;
+      position:relative;
+    }
+    .select{
+      width:100%;
+      appearance:none;
+      -webkit-appearance:none;
+      border:1px solid rgba(255,255,255,.55);
+      background: rgba(255,255,255,.45);
+      border-radius: 16px;
+      padding: 10px 40px 10px 12px;
+      font-weight:900;
+      color:rgba(11,19,32,.85);
+      outline:none;
+      box-shadow: 0 10px 22px rgba(0,0,0,.08);
+      font-size:14px;
+      line-height:1.2;
+    }
+    .selectWrap:after{
+      content:"";
+      position:absolute;
+      right:12px; top:50%;
+      width:0;height:0;
+      border-left:6px solid transparent;
+      border-right:6px solid transparent;
+      border-top:8px solid rgba(11,19,32,.7);
+      transform: translateY(-20%);
+      pointer-events:none;
+    }
+
+    /* grid */
+    .grid{
+      margin-top:10px;
+      display:grid;
+      gap:12px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 880px){
+      .grid{grid-template-columns: repeat(3, minmax(0, 1fr));}
+    }
+
+    .card{
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(255,255,255,.75);
+      border-radius: var(--radius);
+      overflow:hidden;
+      box-shadow: var(--shadow);
+    }
+    .cover{
+      position:relative;
+      aspect-ratio: 16/10;
+      background:#e9eef5;
+      overflow:hidden;
+    }
+    .cover img{
+      width:100%;height:100%;
+      object-fit:cover;
+      display:block;
+      transform: translateZ(0);
+    }
+    .cover .skeleton{
+      position:absolute;inset:0;
+      background: linear-gradient(90deg, #e9eef5 0%, #f4f7fb 40%, #e9eef5 80%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s linear infinite;
+    }
+    @keyframes shimmer{0%{background-position:0 0}100%{background-position:200% 0}}
+
+    .badgeStatus{
+      position:absolute;
+      top:10px; right:10px;
+      padding:8px 12px;
+      border-radius: 999px;
+      font-weight:1000;
+      font-size:12px;
+      letter-spacing:.2px;
+      box-shadow: 0 10px 20px rgba(0,0,0,.10);
+      border: 1px solid rgba(255,255,255,.7);
+      backdrop-filter: blur(6px);
+      max-width: 75%;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .body{padding:10px 12px 12px}
+    .row1{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .plotLine{
+      font-weight:1000;
+      color: rgba(11,19,32,.75);
+      letter-spacing:.2px;
+      font-size:14px;
+    }
+    .price{
+      font-size:17px;
+      font-weight:1000;
+      white-space:nowrap;
+    }
+
+    .meta{
+      margin-top:8px;
+      display:flex;
+      gap:8px;
+      flex-wrap:nowrap;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:8px 8px;
+      border-radius: 999px;
+      background: rgba(11,19,32,.04);
+      border: 1px solid rgba(11,19,32,.08);
+      font-weight:900;
+      color: rgba(11,19,32,.78);
+      min-width: 0;
+      flex: 1 1 0;
+      justify-content:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      font-size:14px;
+    }
+    .pill .ico{
+      font-size:16px;
+      line-height:1;
+      opacity:.95;
+      flex:0 0 auto;
+    }
+    .pill .lbl{
+      font-weight:1000;
+      letter-spacing:.2px;
+    }
+
+    .btn{
+      margin-top:10px;
+      width:100%;
+      border:none;
+      border-radius: 16px;
+      padding:12px 12px;
+      font-size:15px;
+      font-weight:1000;
+      background: #c6f0d8;
+      color: rgba(11,19,32,.86);
+      cursor:pointer;
+    }
+    .btn:active{transform:scale(.99)}
+
+    .empty{
+      margin-top:12px;
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(255,255,255,.55);
+      border-radius: 16px;
+      padding: 12px;
+      text-align:center;
+      color: rgba(11,19,32,.75);
+      font-weight:900;
+      font-size:13px;
+    }
+
+    /* toast */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      background: rgba(11,19,32,.88);
+      color:#fff;
+      padding:10px 14px;
+      border-radius: 999px;
+      font-weight:800;
+      font-size:13px;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index:9999;
+      max-width: 94vw;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+
+    /* Loading overlay */
+    .loader{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:10000;
+      background: radial-gradient(1200px 700px at 10% 10%, rgba(255,255,255,.26), transparent 60%),
+                  radial-gradient(1100px 700px at 90% 30%, rgba(255,255,255,.18), transparent 60%),
+                  linear-gradient(180deg, #8faac8, #a7bdd5 55%, #95b2cf);
+    }
+    .loaderCard{
+      width:min(92vw, 520px);
+      padding:28px 18px;
+      border-radius:28px;
+      border:1px solid rgba(255,255,255,.5);
+      background: rgba(255,255,255,.16);
+      backdrop-filter: blur(10px);
+      text-align:center;
+    }
+    .loaderIcons{
+      display:flex;
+      gap:16px;
+      justify-content:center;
+      align-items:center;
+      margin-bottom:14px;
+      font-size:42px;
+    }
+    .wiggle{
+      display:inline-block;
+      animation: wiggle 1.05s ease-in-out infinite;
+      transform-origin: 50% 80%;
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,.14));
+    }
+    .wiggle:nth-child(2){ animation-delay:.12s; }
+    .wiggle:nth-child(3){ animation-delay:.24s; }
+    @keyframes wiggle{
+      0%   { transform: translateY(0) rotate(0deg) scale(1); }
+      35%  { transform: translateY(-8px) rotate(-5deg) scale(1.02); }
+      70%  { transform: translateY(0) rotate(5deg) scale(1); }
+      100% { transform: translateY(0) rotate(0deg) scale(1); }
+    }
+    .loaderText{
+      font-weight:1000;
+      letter-spacing:1px;
+      font-size:22px;
+      color: rgba(255,255,255,.92);
+      text-shadow: 0 10px 18px rgba(0,0,0,.20);
+    }
+    .loaderSub{
+      margin-top:8px;
+      font-weight:800;
+      font-size:14px;
+      color: rgba(255,255,255,.85);
+      opacity:.95;
+    }
+    .loader.hide{
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .22s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="loader" id="loader" aria-live="polite">
+    <div class="loaderCard">
+      <div class="loaderIcons" aria-hidden="true">
+        <span class="wiggle">🐚</span>
+        <span class="wiggle">🌊</span>
+        <span class="wiggle">🌴</span>
+      </div>
+      <div class="loaderText">Smart Properties System</div>
+      <div class="loaderSub">Syncing database...</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="topbar">
+      <div class="logo">HP</div>
+      <div class="titlebox">
+        <p class="title" id="masterVill">Master Vill</p>
+        <div class="subtitle">
+          <span class="chip" id="countChip">0 items</span>
+        </div>
+      </div>
+      <a class="iconbtn" id="gatewayBtn" href="#" aria-label="Gateway">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21a8 8 0 0 0-16 0"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </a>
+    </div>
+
+    <div class="controls">
+      <div class="controlsInner">
+        <div class="selectWrap">
+          <select class="select" id="plotSelect">
+            <option value="__all__">Select Plot</option>
+          </select>
+        </div>
+        <div class="selectWrap">
+          <select class="select" id="sortSelect">
+            <option value="__all__">Select Price</option>
+            <option value="price_desc">Price High → Low</option>
+            <option value="price_asc">Price Low → High</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty" style="display:none;">ไม่พบรายการที่ตรงกับเงื่อนไข</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /**********************************************************
+     * CONFIG
+     **********************************************************/
+    const API_URL = "https://script.google.com/macros/s/AKfycbxc76n6YKLUCCHZZR12c5K4_0k40gHa2ZzDMVZn29BElQlSO3X6O8B7dFIFi0bEukqJ/exec";
+    
+    // ✅ แก้ไข: เปลี่ยนค่าอ้างอิงจาก Project_0 เป็น HP00
+    const PROJECT = "HP00";
+    
+    const GATEWAY_URL = "https://agent-smart-system-interface.github.io/Master-List-Properties/gateway.html";
+    const DETAILS_URL = "details.html?id=";
+
+    const $ = (id)=>document.getElementById(id);
+
+    function showLoader(on){
+      const el = $("loader");
+      if(!el) return;
+      if(on) el.classList.remove("hide");
+      else el.classList.add("hide");
+    }
+
+    function toast(msg){
+      const el = $("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=>el.classList.remove("show"), 2200);
+    }
+
+    function fmtPrice(v){
+      const n = Number(String(v||"").replace(/,/g,""));
+      if (!isFinite(n) || n<=0) return "฿0";
+      return "฿" + n.toLocaleString("en-US");
+    }
+
+    function statusStyle(statusRaw){
+      const s = String(statusRaw||"").trim().toLowerCase();
+      if (s.includes("available")) return {bg:"rgba(192,255,222,.92)", fg:"rgba(0,90,55,1)"};
+      if (s.includes("under"))     return {bg:"rgba(255,240,195,.92)", fg:"rgba(120,70,0,1)"};
+      if (s.includes("reserved"))  return {bg:"rgba(213,232,255,.92)", fg:"rgba(0,60,120,1)"};
+      if (s.includes("sold"))      return {bg:"rgba(255,208,208,.92)", fg:"rgba(130,0,0,1)"};
+      return {bg:"rgba(255,255,255,.75)", fg:"rgba(11,19,32,.80)"};
+    }
+
+    function normalizePlot(p){
+      return String(p||"").trim();
+    }
+
+    // ✅ แก้ไข: เปลี่ยน Cache Key ให้ตรงกับโปรเจกต์ใหม่ HP00
+    const CACHE_KEY = `SP_UNITLIST_${PROJECT}_v1`;
+    
+    function readCache(){
+      try{
+        const raw = sessionStorage.getItem(CACHE_KEY);
+        if(!raw) return null;
+        const obj = JSON.parse(raw);
+        if(!obj || !Array.isArray(obj.data)) return null;
+        if(Date.now() - obj.ts > 3*60*1000) return null;
+        return obj.data;
+      }catch(_){ return null; }
+    }
+    function writeCache(data){
+      try{
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ts:Date.now(), data}));
+      }catch(_){}
+    }
+
+    async function fetchUnitList(){
+      const cached = readCache();
+      if (cached) return cached;
+
+      const url = new URL(API_URL);
+      url.searchParams.set("mode", "getUnitList");
+      url.searchParams.set("project", PROJECT);
+
+      const res = await fetch(url.toString(), { cache: "no-store" });
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error(data?.error || "API invalid");
+      writeCache(data);
+      return data;
+    }
+
+    let all = [];
+    let filtered = [];
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function buildPlotOptions(list){
+      const set = new Set();
+      list.forEach(x=>{
+        const p = normalizePlot(x.plot);
+        if(p) set.add(p);
+      });
+      const plots = Array.from(set).sort((a,b)=>a.localeCompare(b, "en"));
+      const sel = $("plotSelect");
+      sel.innerHTML =
+        `<option value="__all__">Select Plot</option>` +
+        plots.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+    }
+
+    function applyFilters(){
+      const plotVal = $("plotSelect").value;
+      const sortVal = $("sortSelect").value;
+
+      filtered = all.filter(x=>{
+        if(plotVal === "__all__") return true;
+        return normalizePlot(x.plot) === plotVal;
+      });
+
+      filtered.sort((a,b)=>{
+        const pa = Number(String(a.price||"").replace(/,/g,"")) || 0;
+        const pb = Number(String(b.price||"").replace(/,/g,"")) || 0;
+        if(sortVal === "price_asc") return pa - pb;
+        return pb - pa;
+      });
+
+      renderGrid();
+    }
+
+    function renderGrid(){
+      const grid = $("grid");
+      grid.innerHTML = "";
+      $("empty").style.display = filtered.length ? "none" : "block";
+      $("countChip").textContent = `${filtered.length} items`;
+
+      filtered.forEach(item=>{
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const cover = document.createElement("div");
+        cover.className = "cover";
+
+        const sk = document.createElement("div");
+        sk.className = "skeleton";
+        cover.appendChild(sk);
+
+        const img = document.createElement("img");
+        img.alt = "image";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
+        img.dataset.src = String(item.thumbnail||"").trim() || "";
+        cover.appendChild(img);
+
+        const st = document.createElement("div");
+        st.className = "badgeStatus";
+        const style = statusStyle(item.status);
+        st.style.background = style.bg;
+        st.style.color = style.fg;
+        st.textContent = String(item.status||"").trim() || "—";
+        cover.appendChild(st);
+
+        const body = document.createElement("div");
+        body.className = "body";
+
+        const row1 = document.createElement("div");
+        row1.className = "row1";
+
+        const plotLine = document.createElement("div");
+        plotLine.className = "plotLine";
+        plotLine.textContent = normalizePlot(item.plot) ? `PLOT : ${normalizePlot(item.plot)}` : "PLOT : -";
+
+        const price = document.createElement("div");
+        price.className = "price";
+        price.textContent = fmtPrice(item.price);
+
+        row1.appendChild(plotLine);
+        row1.appendChild(price);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.appendChild(pillIcon("bed", item.bedrooms || "-", "Beds"));
+        meta.appendChild(pillIcon("bath", item.bathrooms || "-", "Baths"));
+        meta.appendChild(pillIcon("area", item.livingSqm || "-", "m²"));
+
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.textContent = "More Details";
+        btn.addEventListener("click", ()=>{
+          if(!item.id) return;
+          // ✅ แก้ไข: ส่งพารามิเตอร์ project=HP00 ไปยังหน้ารายละเอียดด้วย
+          location.href = DETAILS_URL + encodeURIComponent(item.id) + `&project=${PROJECT}`;
+        });
+
+        body.appendChild(row1);
+        body.appendChild(meta);
+        body.appendChild(btn);
+
+        card.appendChild(cover);
+        card.appendChild(body);
+        grid.appendChild(card);
+      });
+
+      setupLazyImages();
+    }
+
+    function pillIcon(type, val, unitLabel){
+      const el = document.createElement("div");
+      el.className = "pill";
+      let ico = "📐";
+      let label = unitLabel || "";
+      if(type==="bed"){ ico = "🛏️"; }
+      if(type==="bath"){ ico = "🚿"; }
+      el.innerHTML = `<span class="ico">${ico}</span><span class="lbl">${escapeHtml(val)}${label ? " " + escapeHtml(label) : ""}</span>`;
+      return el;
+    }
+
+    function setupLazyImages(){
+      const imgs = Array.from(document.querySelectorAll("img[data-src]"));
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(ent=>{
+          if(!ent.isIntersecting) return;
+          const img = ent.target;
+          io.unobserve(img);
+          const src = img.dataset.src;
+          const sk = img.parentElement?.querySelector(".skeleton");
+          if(!src){
+            if(sk) sk.remove();
+            img.style.display = "none";
+            return;
+          }
+          img.onload = ()=>{ if(sk) sk.remove(); };
+          img.onerror = ()=>{ if(sk) sk.remove(); };
+          img.src = src;
+        });
+      }, { rootMargin: "220px 0px" });
+      imgs.forEach(img=>io.observe(img));
+    }
+
+    (function init(){
+      $("gatewayBtn").href = GATEWAY_URL;
+      showLoader(true);
+      loadAll();
+      $("plotSelect").addEventListener("change", applyFilters);
+      $("sortSelect").addEventListener("change", applyFilters);
+    })();
+
+    async function loadAll(){
+      try{
+        const data = await fetchUnitList();
+        all = data.map(x=>({
+          id: x.id || "",
+          plot: x.plot || "",
+          projectName: x.projectName || x.project_name || "",
+          thumbnail: x.thumbnail || "",
+          bedrooms: x.bedrooms || "",
+          bathrooms: x.bathrooms || "",
+          livingSqm: x.livingSqm || x.living_area_sq_m || "",
+          price: x.price || "",
+          status: x.status || ""
+        }));
+
+        $("masterVill").textContent = pickMasterVillName(all) || "Master Vill";
+        buildPlotOptions(all);
+        applyFilters();
+        showLoader(false);
+      }catch(err){
+        console.error(err);
+        $("countChip").textContent = "โหลดไม่สำเร็จ";
+        toast("โหลดข้อมูลไม่สำเร็จ");
+        $("empty").style.display = "block";
+        showLoader(false);
+      }
+    }
+
+    function pickMasterVillName(list){
+      const freq = new Map();
+      list.forEach(x=>{
+        const n = String(x.projectName||"").trim();
+        if(!n) return;
+        freq.set(n, (freq.get(n)||0)+1);
+      });
+      let best = "", bestN = 0;
+      for(const [k,v] of freq.entries()){
+        if(v>bestN){ best=k; bestN=v; }
+      }
+      return best;
+    }
+  </script>
+</body>
+</html>
+ 
